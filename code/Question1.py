@@ -1,4 +1,3 @@
-from inspect import stack
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -6,19 +5,21 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection # New import
 from PIL import Image, ImageDraw, ImageOps
 from random import sample
 
-
 ITERS = 3000
 RANSAC_THRESH = 0.1
+mode = 'fountain' if True else 'bust'
 
+og_img1 = Image.open(f"resources/{mode}/{mode}_im1.jpg")
+og_img2 = Image.open(f"resources/{mode}/{mode}_im1.jpg")
 
-def file_to_data(datafile_name, file_path="resources/bust/"):
+def file_to_data(datafile_name, file_path="resources/" + mode + "/"):
     df = pd.read_csv(file_path + datafile_name, sep=',', header=None)
     return df
 
 def drawFilterMapping(datafile_name, pic_name, firstDex=0):
     return draw_mapping(datafile_name, pic_name, firstDex=firstDex, filterMode=True)
 
-def draw_mapping(datafile_name, pic_name, firstDex=0, filterMode=False, file_path='resources/bust/'):
+def draw_mapping(datafile_name, pic_name, firstDex=0, filterMode=False, file_path="resources/" + mode + "/"):
     # load in data, and images
     df = file_to_data(datafile_name)
     # load image 2 rather, if they are refering to image 2 via firstDex
@@ -76,13 +77,13 @@ def draw_mapping(datafile_name, pic_name, firstDex=0, filterMode=False, file_pat
         draw.line([(x[i], y[i]), (xprime[i], yprime[i])], fill=lineColor, width=linethickness)
         # show resulting image
     
-    mode = "1" if firstDex < 2 else "2"
+    check = "1" if firstDex < 2 else "2"
     # if we are in filter mode, return remaining matches as well
     if filterMode:
-        pic.save("output/bust_dist" + mode + ".jpg")
+        pic.save(f"output/{mode}_dist" + check + ".jpg")
         return pic, np.array(remaining)
     # if not, return just the image containing ALL drawings
-    pic.save("output/bust_raw" + mode + ".jpg")
+    pic.save(f"output/{mode}_raw" + check + ".jpg")
     return pic
 
 def get_A_matrix(df):
@@ -104,7 +105,7 @@ def get_A_matrix(df):
 
     return np.array(matrix)
 
-def draw_matches_after_ransac(df_set, pic_name, firstDex=0, file_path='resources/bust/'):
+def draw_matches_after_ransac(df_set, pic_name, firstDex=0, file_path="resources/" + mode + "/"):
      # load image 2 rather, if they are refering to image 2 via firstDex
     if firstDex > 1:
         pic_name = str(pic_name).replace("1", "2")
@@ -137,8 +138,8 @@ def draw_matches_after_ransac(df_set, pic_name, firstDex=0, file_path='resources
         draw.line([(x[i], y[i]), (xprime[i], yprime[i])], fill=lineColor, width=linethickness)
         # show resulting image
 
-    mode = "1" if firstDex < 2 else "2"
-    pic.save("output/bust_ransaced" + mode + ".jpg")
+    thing = "1" if firstDex < 2 else "2"
+    pic.save(f"output/{mode}_ransaced" + thing + ".jpg")
     
 # datapoint is of the form [x,y, xprime, yprime]
 def sampsondist(datapoint, FMat):
@@ -257,7 +258,7 @@ def get_Projection(U, V, K, Kprime, points):
         val1 = np.dot(R[2,:].transpose(), (vec_option - C))
         val2 = np.dot(R_prime[2,:].transpose(), (vec_option - C_prime))
         results.append((val1 > 0) and (val2 > 0))
-    
+
     trueDex = -1
     for i in range(len(results)):
         if results[i]:
@@ -361,36 +362,77 @@ def filter_set(P, P_prime, set_to_filter, thresh):
     set_to_return = np.array(set_to_return)
     return set_to_return.transpose()
 
+def plot_camera(ax, C1, C2, R1, Rw):
+
+    factor = 1
+    camera1_loc = C1
+    camera2_loc = C2
+
+    camera1_x = camera1_loc - -factor*R1[0]
+    camera1_y = camera1_loc - factor*R1[1]
+    camera1_z = camera1_loc - -factor*R1[2]
+
+    camera2_x = camera2_loc - -factor*R2[0]
+    camera2_y = camera2_loc - factor*R2[1]
+    camera2_z = camera2_loc - -factor*R2[2]
+    
+    margin = 0.05 
+    camsize = 80
+    # plot camera1
+    ax.scatter(camera1_loc[0], camera1_loc[1], camera1_loc[2], marker='d', color='r', label='Camera 1', s=camsize, alpha=0.6)
+    # plot camera1 x
+    ax.plot([camera1_loc[0], camera1_x[0]], [camera1_loc[1], camera1_x[1]], [camera1_loc[2], camera1_x[2]], color='green')
+    ax.text(camera1_x[0] + margin, camera1_x[1] + margin, camera1_x[2] + margin, 'x1', color='green')
+    # plot camera1 y
+    ax.plot([camera1_loc[0], camera1_y[0]], [camera1_loc[1], camera1_y[1]], [camera1_loc[2], camera1_y[2]], color='blue')
+    ax.text(camera1_y[0] + margin, camera1_y[1] + margin, camera1_y[2] + margin, 'y1', color='blue')
+    # plot camera1 z
+    ax.plot([camera1_loc[0], camera1_z[0]], [camera1_loc[1], camera1_z[1]], [camera1_loc[2], camera1_z[2]], color='black')
+    ax.text(camera1_z[0] + margin, camera1_z[1] + margin, camera1_z[2] + margin, 'z1', color='black')
+
+
+    # plot camera1
+    ax.scatter(camera2_loc[0], camera2_loc[1], camera2_loc[2], marker='d', color='g', label='Camera 2', s=camsize, alpha=0.6)
+    # plot camera1 x
+    ax.plot([camera2_loc[0], camera2_x[0]], [camera2_loc[1], camera2_x[1]], [camera2_loc[2], camera2_x[2]], color='yellowgreen')
+    ax.text(camera2_x[0] + margin, camera2_x[1] + margin, camera2_x[2] + margin, 'x2', color='yellowgreen')
+    # plot camera1 y
+    ax.plot([camera2_loc[0], camera2_y[0]], [camera2_loc[1], camera2_y[1]], [camera2_loc[2], camera2_y[2]], color='dodgerblue')
+    ax.text(camera2_y[0] + margin, camera2_y[1] + margin, camera2_y[2] + margin, 'y2', color='dodgerblue')
+    # plot camera1 z
+    ax.plot([camera2_loc[0], camera2_z[0]], [camera2_loc[1], camera2_z[1]], [camera2_loc[2], camera2_z[2]], color='midnightblue')
+    ax.text(camera2_z[0] + margin, camera2_z[1] + margin, camera2_z[2] + margin, 'z2', color='midnightblue')
+
 
 # Draw raw image pairs over both images, part of 1A
-map1to2Raw = draw_mapping("bust_matches.txt", "bust_im1.jpg", 0)
-map2to1Raw = draw_mapping("bust_matches.txt", "bust_im1.jpg", 2)
+map1to2Raw = draw_mapping(f"{mode}_matches.txt", f"{mode}_im1.jpg", 0)
+map2to1Raw = draw_mapping(f"{mode}_matches.txt", f"{mode}_im1.jpg", 2)
 
 # Draw (distance) filtered matches over both images, part of 1A
-map1to2Filt, remaining1 = drawFilterMapping("bust_matches.txt", "bust_im1.jpg", 0)
-map2to1Filt, remaining2 = drawFilterMapping("bust_matches.txt", "bust_im1.jpg", 2)
+map1to2Filt, remaining1 = drawFilterMapping(f"{mode}_matches.txt", f"{mode}_im1.jpg", 0)
+map2to1Filt, remaining2 = drawFilterMapping(f"{mode}_matches.txt", f"{mode}_im1.jpg", 2)
 
-# # Do the ransac based filtering algorithm, on both images, part of 1B
+# Do the ransac based filtering algorithm, on both images, part of 1B
 # ransaced1 = do_RANSAC(remaining1)
 # ransaced2 = do_RANSAC(remaining2)
 
 # # save these matches, so that I dont need to re-run ransac each time
-# ransaced1.to_csv("output/ransaced1.csv", header=False, index=False)
-# ransaced2.to_csv("output/ransaced2.csv", header=False, index=False)
-ransaced1 = file_to_data('ransaced1.csv', file_path='output/')
-ransaced2 = file_to_data('ransaced2.csv', file_path='output/')
+# ransaced1.to_csv(f"output/{mode}_ransaced1.csv", header=False, index=False)
+# ransaced2.to_csv(f"output/{mode}_ransaced2.csv", header=False, index=False)
+ransaced1 = file_to_data(f'{mode}_ransaced1.csv', file_path='output/')
+ransaced2 = file_to_data(f'{mode}_ransaced2.csv', file_path='output/')
 
 
-draw_matches_after_ransac(ransaced1, "bust_im1.jpg", 0)
-draw_matches_after_ransac(ransaced2, "bust_im1.jpg", 2)
+draw_matches_after_ransac(ransaced1, f"{mode}_im1.jpg", 0)
+draw_matches_after_ransac(ransaced2, f"{mode}_im1.jpg", 2)
 
 # Re-estimate the F matrix using the ransaced points, which should only be valid matches
 F1 = get_F_matrix(ransaced1)
 F2 = get_F_matrix(ransaced2)
 
 # with respect to image 1, if we run w image 2, we need to swap that.
-K = file_to_data("bust_K1.txt")
-K_prime = file_to_data("bust_K2.txt")
+K = file_to_data(f"{mode}_K1.txt")
+K_prime = file_to_data(f"{mode}_K2.txt")
 
 # bias-removed version of U, S, V and E
 U1, S1, V1, E1 = get_Essential(F1, K, K_prime)
@@ -399,25 +441,43 @@ U2, S2, V2, E2 = get_Essential(F2, K_prime, K)
 # get the P and P matrix corresponding to this triangulated point
 P, P_prime = get_Projection(U1, V1, K, K_prime, ransaced1)
 
+# write cam matricies to file, for later use
+pd.DataFrame(P).to_csv("output/P.csv", index=None, header=None)
+pd.DataFrame(P_prime).to_csv("output/P_prime.csv", index=None, header=None)
+
 # triangulate all points, using the obtained projection matrix, of the form [    [xDim], [yDim], [Zdim]    ] ?
 triangulated = np.array(triangulateAll(P, P_prime, ransaced1)).transpose()
 
 # lets get each camera location, so that we can remove the far away points
 cam_dist_range = get_camera_distance_range(P, P_prime, triangulated)
 
-# define distance threshold as percentage of range
+# define distance threshold as percentage of range, lower bound of points we cut, anything bigger, we remover
 distance_thresh = 0.25 * cam_dist_range
 
-# filter far points, out
-filtered_set = filter_set(P, P_prime, triangulated, distance_thresh)
+# filter far points, out, 15 is a good number for bust, 50 for fountain
+filtered_set = filter_set(P, P_prime, triangulated, 15)
+
+# lets get the colours of our plot
+cols_of_dots = []
+for i in range(filtered_set.shape[1]):
+    pix = np.dot(P, np.array([filtered_set[0][i], filtered_set[1][i], filtered_set[2][i], 1]))
+    pix /= pix[2]
+    pix = pix[:2]
+    ogpix = tuple((np.array(list(og_img1.getpixel((pix[0],pix[1])))) / 255))
+    cols_of_dots.append(ogpix)
 
 # now lets begin creating a 3d plot
 fig = plt.figure()
 ax = plt.axes(projection='3d')
-ax.scatter3D(filtered_set[0], filtered_set[1], filtered_set[2], s=3)
+ax.scatter3D(filtered_set[0], filtered_set[1], filtered_set[2], c=cols_of_dots, s=3)
+
+# now we should add the camera
+K1, R1, C1 = decomposeP(P)
+K2, R2, C2 = decomposeP(P_prime)
+plot_camera(ax, C1, C2, R1, R2)
+
 plt.legend()
-plt.xlabel("X-Axis (mm)")
-plt.ylabel("Y-Axis (mm)")
+plt.xlabel("X-Axis")
+plt.ylabel("Y-Axis")
 set_axes_equal(ax)
 plt.show()
-

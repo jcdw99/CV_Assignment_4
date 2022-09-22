@@ -7,7 +7,7 @@ from random import sample
 
 ITERS = 3000
 RANSAC_THRESH = 0.1
-mode = 'fountain' if True else 'bust'
+mode = 'fountain' if False else 'bust'
 
 og_img1 = Image.open(f"resources/{mode}/{mode}_im1.jpg")
 og_img2 = Image.open(f"resources/{mode}/{mode}_im1.jpg")
@@ -413,14 +413,14 @@ map1to2Filt, remaining1 = drawFilterMapping(f"{mode}_matches.txt", f"{mode}_im1.
 map2to1Filt, remaining2 = drawFilterMapping(f"{mode}_matches.txt", f"{mode}_im1.jpg", 2)
 
 # Do the ransac based filtering algorithm, on both images, part of 1B
-# ransaced1 = do_RANSAC(remaining1)
-# ransaced2 = do_RANSAC(remaining2)
+ransaced1 = do_RANSAC(remaining1)
+ransaced2 = do_RANSAC(remaining2)
 
 # # save these matches, so that I dont need to re-run ransac each time
-# ransaced1.to_csv(f"output/{mode}_ransaced1.csv", header=False, index=False)
-# ransaced2.to_csv(f"output/{mode}_ransaced2.csv", header=False, index=False)
-ransaced1 = file_to_data(f'{mode}_ransaced1.csv', file_path='output/')
-ransaced2 = file_to_data(f'{mode}_ransaced2.csv', file_path='output/')
+ransaced1.to_csv(f"output/{mode}_ransaced1.csv", header=False, index=False)
+ransaced2.to_csv(f"output/{mode}_ransaced2.csv", header=False, index=False)
+# ransaced1 = file_to_data(f'{mode}_ransaced1.csv', file_path='output/')
+# ransaced2 = file_to_data(f'{mode}_ransaced2.csv', file_path='output/')
 
 
 draw_matches_after_ransac(ransaced1, f"{mode}_im1.jpg", 0)
@@ -441,6 +441,9 @@ U2, S2, V2, E2 = get_Essential(F2, K_prime, K)
 # get the P and P matrix corresponding to this triangulated point
 P, P_prime = get_Projection(U1, V1, K, K_prime, ransaced1)
 
+print(P)
+print('\n\n')
+print(P_prime)
 # write cam matricies to file, for later use
 pd.DataFrame(P).to_csv("output/P.csv", index=None, header=None)
 pd.DataFrame(P_prime).to_csv("output/P_prime.csv", index=None, header=None)

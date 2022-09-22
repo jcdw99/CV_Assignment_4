@@ -4,7 +4,7 @@ from PIL import Image, ImageDraw, ImageOps
 import pandas as pd
 import cv2
 
-mode = 'fountain' if True else 'bust'
+mode = 'fountain' if False else 'bust'
 
 def applyhomography(A,H):
     # cast the input image to double precision floats
@@ -176,7 +176,12 @@ P1_prime = np.dot(np.dot(K_n, R_n), np.append(np.identity(3), (-C1).reshape((3,1
 P2_prime = np.dot(np.dot(K_n, R_n), np.append(np.identity(3), (-C2).reshape((3,1)), axis=1))
 e = np.dot(P1_prime, np.append(C2, 1))
 
+F_orig = F_from_projection(P1, P2)
 F = F_from_projection(P1_prime, P2_prime)
+
+# F=F_orig
+# pic2 = cv2.imread(f'resources/{mode}/{mode}_im2.jpg')
+# pic1 = cv2.imread(f'resources/{mode}/{mode}_im1.jpg')
 
 # amount of lines
 lines = 20
@@ -199,4 +204,4 @@ pic2 = cv2.cvtColor(pic2, cv2.COLOR_BGR2RGB)
 pic1 = cv2.cvtColor(pic1, cv2.COLOR_BGR2RGB)
 
 Image.fromarray(pic2).save(f"output/{mode}2_w_lines.jpg")
-Image.fromarray(pic1).show(f"output/{mode}1_w_lines.jpg")
+Image.fromarray(pic1).save(f"output/{mode}1_w_lines.jpg")

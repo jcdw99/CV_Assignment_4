@@ -1,4 +1,4 @@
-# Computer Vision Assignment 4
+# Calibration of a Stereo Camera System
 
 This project consists of 2 python files. The first python file is associated with question 1, and the second with question 2. 
 
